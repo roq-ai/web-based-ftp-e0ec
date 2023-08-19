@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions      = [pgcrypto]
+}
+
+model access_right {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.VarChar(255)
+  ftp_user_id String?   @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime  @default(now()) @db.Timestamp(6)
+  ftp_user    ftp_user? @relation(fields: [ftp_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model file {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @db.VarChar(255)
+  path       String   @db.VarChar(255)
+  size       Int
+  folder_id  String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  folder     folder?  @relation(fields: [folder_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model folder {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String    @db.VarChar(255)
+  path        String    @db.VarChar(255)
+  ftp_user_id String?   @db.Uuid
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  updated_at  DateTime  @default(now()) @db.Timestamp(6)
+  file        file[]
+  ftp_user    ftp_user? @relation(fields: [ftp_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model ftp_user {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username      String         @db.VarChar(255)
+  password      String         @db.VarChar(255)
+  folder_access String         @db.VarChar(255)
+  rights        String         @db.VarChar(255)
+  user_id       String?        @db.Uuid
+  created_at    DateTime       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime       @default(now()) @db.Timestamp(6)
+  access_right  access_right[]
+  folder        folder[]
+  user          user?          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model organization {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?  @db.VarChar(255)
+  name        String   @db.VarChar(255)
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  user_id     String   @db.Uuid
+  tenant_id   String   @db.VarChar(255)
+  user        user     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String         @unique @db.VarChar(255)
+  firstName    String?        @db.VarChar(255)
+  lastName     String?        @db.VarChar(255)
+  roq_user_id  String         @db.VarChar(255)
+  tenant_id    String         @db.VarChar(255)
+  created_at   DateTime       @default(now()) @db.Timestamp(6)
+  updated_at   DateTime       @default(now()) @db.Timestamp(6)
+  ftp_user     ftp_user[]
+  organization organization[]
+}
